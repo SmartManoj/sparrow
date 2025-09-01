@@ -60,8 +60,8 @@ pub const DEFAULT_SPARROW_CONFIG: SparrowConfig = SparrowConfig {
         max_conseq_failed_attempts: None,
         solution_pool_distribution_stddev: 0.25,
         separator_config: SeparatorConfig {
-            iter_no_imprv_limit: 200,
-            strike_limit: 3,
+            iter_no_imprv_limit: 100,
+            strike_limit: 2,
             log_level: log::Level::Info,
             n_workers: 3,
             sample_config: SampleConfig {
@@ -89,7 +89,7 @@ pub const DEFAULT_SPARROW_CONFIG: SparrowConfig = SparrowConfig {
         },
     },
     cde_config: CDEConfig {
-        quadtree_depth: 3,
+        quadtree_depth: 5,
         cd_threshold: 16,
         item_surrogate_config: SPSurrogateConfig {
             n_pole_limits: [(64, 0.0), (16, 0.8), (8, 0.9)],
@@ -97,7 +97,7 @@ pub const DEFAULT_SPARROW_CONFIG: SparrowConfig = SparrowConfig {
             n_ff_piers: 0,
         },
     },
-    poly_simpl_tolerance: Some(0.001),
-    narrow_concavity_cutoff_ratio: Some(0.01),
+    poly_simpl_tolerance: Some(0.01),
+    narrow_concavity_cutoff_ratio: Some(0.025),
     min_item_separation: None,
 };
