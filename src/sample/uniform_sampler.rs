@@ -28,7 +28,39 @@ struct RotEntry {
 }
 
 impl UniformBBoxSampler {
+    /// Create a new sampler with an optional symmetric constraint.
+    /// If `symmetric_axis_x` is Some, sampling is restricted to x <= axis_x.
+    pub fn new_with_symmetric(sample_bbox: Rect, item: &Item, container_bbox: Rect, symmetric_axis_x: Option<f32>) -> Option<Self> {
+        // If symmetric mode, restrict sample_bbox to left half
+        let effective_sample_bbox = match symmetric_axis_x {
+            Some(axis_x) => Rect::try_new(
+                sample_bbox.x_min,
+                sample_bbox.y_min,
+                f32::min(sample_bbox.x_max, axis_x),
+                sample_bbox.y_max,
+            ).ok()?,
+            None => sample_bbox,
+        };
+
+        // Also restrict container_bbox for symmetric mode
+        let effective_container_bbox = match symmetric_axis_x {
+            Some(axis_x) => Rect::try_new(
+                container_bbox.x_min,
+                container_bbox.y_min,
+                f32::min(container_bbox.x_max, axis_x),
+                container_bbox.y_max,
+            ).ok()?,
+            None => container_bbox,
+        };
+
+        Self::new_internal(effective_sample_bbox, item, effective_container_bbox)
+    }
+
     pub fn new(sample_bbox: Rect, item: &Item, container_bbox: Rect) -> Option<Self> {
+        Self::new_internal(sample_bbox, item, container_bbox)
+    }
+
+    fn new_internal(sample_bbox: Rect, item: &Item, container_bbox: Rect) -> Option<Self> {
         let rotations = match &item.allowed_rotation {
             RotationRange::None => &vec![0.0],
             RotationRange::Discrete(r) => r,

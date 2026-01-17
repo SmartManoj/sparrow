@@ -21,6 +21,7 @@ pub struct SeparatorWorker {
     pub ct: CollisionTracker,
     pub rng: Xoshiro256PlusPlus,
     pub sample_config: SampleConfig,
+    pub symmetric_axis_x: Option<f32>,
 }
 
 impl SeparatorWorker {
@@ -50,11 +51,16 @@ impl SeparatorWorker {
                 let item = self.instance.item(item_id);
 
                 //create an evaluator to evaluate the samples during the search
-                let evaluator = SeparationEvaluator::new(&self.prob.layout, item, pk, &self.ct);
+                let evaluator = SeparationEvaluator::new_with_symmetric(
+                    &self.prob.layout, item, pk, &self.ct, self.symmetric_axis_x
+                );
 
                 //search for a better position for the item
                 let (best_sample, n_evals) =
-                    search::search_placement(&self.prob.layout, item, Some(pk), evaluator, self.sample_config, &mut self.rng);
+                    search::search_placement_with_symmetric(
+                        &self.prob.layout, item, Some(pk), evaluator,
+                        self.sample_config, &mut self.rng, self.symmetric_axis_x
+                    );
 
                 let (new_dt, _eval) = best_sample.expect("search_placement should always return a sample");
 

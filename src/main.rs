@@ -4,7 +4,7 @@ use clap::Parser as Clap;
 use log::{info, warn, Level};
 use rand::SeedableRng;
 use sparrow::config::*;
-use sparrow::optimizer::optimize;
+use sparrow::optimizer::optimize_with_symmetric;
 use sparrow::util::io;
 use sparrow::util::io::{MainCli, ExtSPOutput};
 use std::fs;
@@ -58,6 +58,10 @@ fn main() -> Result<()>{
     if let Some(arg_rng_seed) = args.rng_seed {
         config.rng_seed = Some(arg_rng_seed as usize);
     }
+    if args.symmetric {
+        config.symmetric = true;
+        info!("[MAIN] symmetric mode enabled!");
+    }
 
     info!("[MAIN] configured to explore for {}s and compress for {}s", explore_dur.as_secs(), compress_dur.as_secs());
 
@@ -108,14 +112,15 @@ fn main() -> Result<()>{
     
     let mut ctrlc_terminator = CtrlCTerminator::new();
 
-    let solution = optimize(
+    let solution = optimize_with_symmetric(
         instance.clone(),
         rng,
         &mut svg_exporter,
         &mut ctrlc_terminator,
         &config.expl_cfg,
         &config.cmpr_cfg,
-        initial_solution.as_ref()
+        initial_solution.as_ref(),
+        config.symmetric,
     );
 
     let json_path = format!("{OUTPUT_DIR}/final_{}.json", ext_instance.name);

@@ -17,7 +17,13 @@ pub struct SampleConfig {
 }
 
 /// Algorithm 6 and Figure 7 from https://doi.org/10.48550/arXiv.2509.13329
-pub fn search_placement(l: &Layout, item: &Item, ref_pk: Option<PItemKey>, mut evaluator: impl SampleEvaluator, sample_config: SampleConfig, rng: &mut impl Rng) -> (Option<(DTransformation, SampleEval)>, usize) {
+pub fn search_placement(l: &Layout, item: &Item, ref_pk: Option<PItemKey>, evaluator: impl SampleEvaluator, sample_config: SampleConfig, rng: &mut impl Rng) -> (Option<(DTransformation, SampleEval)>, usize) {
+    search_placement_with_symmetric(l, item, ref_pk, evaluator, sample_config, rng, None)
+}
+
+/// Search placement with optional symmetric constraint.
+/// If symmetric_axis_x is Some, sampling is restricted to x <= axis_x.
+pub fn search_placement_with_symmetric(l: &Layout, item: &Item, ref_pk: Option<PItemKey>, mut evaluator: impl SampleEvaluator, sample_config: SampleConfig, rng: &mut impl Rng, symmetric_axis_x: Option<f32>) -> (Option<(DTransformation, SampleEval)>, usize) {
     let item_min_dim = f32::min(item.shape_cd.bbox.width(), item.shape_cd.bbox.height());
 
     let mut best_samples = BestSamples::new(sample_config.n_coord_descents, item_min_dim * UNIQUE_SAMPLE_THRESHOLD);
@@ -31,9 +37,9 @@ pub fn search_placement(l: &Layout, item: &Item, ref_pk: Option<PItemKey>, mut e
             debug!("[S] Starting from: {:?}", (dt, eval));
             best_samples.report(dt, eval);
 
-            //create a sampler around the current placement
+            //create a sampler around the current placement (with symmetric constraint if applicable)
             let pi_bbox = l.placed_items[ref_pk].shape.bbox;
-            UniformBBoxSampler::new(pi_bbox, item, l.container.outer_cd.bbox)
+            UniformBBoxSampler::new_with_symmetric(pi_bbox, item, l.container.outer_cd.bbox, symmetric_axis_x)
         }
         None => None,
     };
@@ -46,7 +52,10 @@ pub fn search_placement(l: &Layout, item: &Item, ref_pk: Option<PItemKey>, mut e
         }
     }
 
-    let container_sampler = UniformBBoxSampler::new(l.container.outer_cd.bbox, item, l.container.outer_cd.bbox);
+    // Use symmetric sampler if in symmetric mode
+    let container_sampler = UniformBBoxSampler::new_with_symmetric(
+        l.container.outer_cd.bbox, item, l.container.outer_cd.bbox, symmetric_axis_x
+    );
 
     if let Some(container_sampler) = container_sampler {
         for _ in 0..sample_config.n_container_samples {

@@ -35,10 +35,15 @@ pub struct Separator {
     pub workers: Vec<SeparatorWorker>,
     pub config: SeparatorConfig,
     pub thread_pool: Option<ThreadPool>,
+    pub symmetric_axis_x: Option<f32>,
 }
 
 impl Separator {
-    pub fn new(instance: SPInstance, prob: SPProblem, mut rng: Xoshiro256PlusPlus, config: SeparatorConfig) -> Self {
+    pub fn new(instance: SPInstance, prob: SPProblem, rng: Xoshiro256PlusPlus, config: SeparatorConfig) -> Self {
+        Self::new_with_symmetric(instance, prob, rng, config, None)
+    }
+
+    pub fn new_with_symmetric(instance: SPInstance, prob: SPProblem, mut rng: Xoshiro256PlusPlus, config: SeparatorConfig, symmetric_axis_x: Option<f32>) -> Self {
         let ct = CollisionTracker::new(&prob.layout);
         let workers = (0..config.n_workers).map(|_|
             SeparatorWorker {
@@ -47,6 +52,7 @@ impl Separator {
                 ct: ct.clone(),
                 rng: Xoshiro256PlusPlus::seed_from_u64(rng.random()),
                 sample_config: config.sample_config,
+                symmetric_axis_x,
             }).collect();
 
         let pool = if cfg!(target_arch = "wasm32") {
@@ -65,6 +71,7 @@ impl Separator {
             workers,
             config,
             thread_pool: pool,
+            symmetric_axis_x,
         }
     }
 
@@ -237,10 +244,16 @@ impl Separator {
 
         self.prob.change_strip_width(new_width);
 
+        // Update symmetric axis if in symmetric mode
+        if self.symmetric_axis_x.is_some() {
+            self.symmetric_axis_x = Some(new_width / 2.0);
+        }
+
         //rebuild the collision tracker
         self.ct = CollisionTracker::new(&self.prob.layout);
 
         //rebuild the workers
+        let symmetric_axis_x = self.symmetric_axis_x;
         self.workers.iter_mut().for_each(|opt| {
             *opt = SeparatorWorker {
                 instance: self.instance.clone(),
@@ -248,6 +261,7 @@ impl Separator {
                 ct: self.ct.clone(),
                 rng: Xoshiro256PlusPlus::seed_from_u64(self.rng.random()),
                 sample_config: self.config.sample_config,
+                symmetric_axis_x,
             };
         });
         debug!("[SEP] changed strip width to {:.3}", new_width);

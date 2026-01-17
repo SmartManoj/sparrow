@@ -34,6 +34,10 @@ pub struct MainCli {
 
     #[arg(short = 's', long, help = "Fixed seed for the random number generator")]
     pub rng_seed: Option<u64>,
+
+    /// Enable symmetric mode (for even number of items)
+    #[arg(long, help = "Enable symmetric packing mode - items are mirrored around center")]
+    pub symmetric: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

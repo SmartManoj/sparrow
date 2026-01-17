@@ -24,6 +24,9 @@ pub struct SparrowConfig {
     /// Disabled if `None`.
     /// See [`jagua_rs::io::parser::Parser::new`] for more details.
     pub narrow_concavity_cutoff_ratio: Option<f32>,
+    /// Enable symmetric packing mode. Items are mirrored around the center of the strip.
+    /// Useful for problems where symmetric solutions are optimal.
+    pub symmetric: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -100,4 +103,5 @@ pub const DEFAULT_SPARROW_CONFIG: SparrowConfig = SparrowConfig {
     poly_simpl_tolerance: Some(0.001),
     narrow_concavity_cutoff_ratio: Some(0.01),
     min_item_separation: None,
+    symmetric: false,
 };
